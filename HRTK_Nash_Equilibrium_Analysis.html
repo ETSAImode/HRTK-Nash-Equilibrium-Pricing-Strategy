@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRTK Nash Equilibrium Pricing Strategy</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-card: #1a1d27;
+            --bg-card-hover: #222632;
+            --bg-header: #0a0c12;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-muted: #6b7280;
+            --accent: #f59e0b;
+            --accent-light: #fbbf24;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --cyan: #06b6d4;
+            --orange: #f97316;
+            --border: #2d3140;
+            --gap: 16px;
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+        .header .subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .header-badge {
+            background: var(--accent);
+            color: #000;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* PHASE NAV */
+        .phase-nav {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .phase-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .phase-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .phase-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .card h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 16px 0 8px;
+        }
+        .card p, .card li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .card ul { list-style: none; padding-left: 0; }
+        .card ul li { padding: 4px 0; padding-left: 18px; position: relative; }
+        .card ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* KPI ROW */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--gap);
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* CHART CONTAINERS */
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: var(--gap);
+            margin-bottom: 20px;
+        }
+        .chart-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+        .chart-box h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .chart-box canvas { max-height: 340px; }
+
+        /* TABLES */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+        }
+        tbody tr:hover { background: rgba(245,158,11,0.04); }
+
+        /* PAYOFF MATRIX */
+        .matrix-grid {
+            display: grid;
+            gap: 2px;
+            margin: 16px 0;
+        }
+        .matrix-cell {
+            padding: 14px 10px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        .matrix-header {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .matrix-best { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+        .matrix-good { background: rgba(59,130,246,0.12); color: var(--blue); }
+        .matrix-neutral { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+        .matrix-bad { background: rgba(239,68,68,0.12); color: var(--red); }
+
+        /* RECOMMENDATION BOX */
+        .rec-box {
+            background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.02) 100%);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin: 16px 0;
+        }
+        .rec-box h3 {
+            color: var(--accent);
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .rec-price {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent);
+            text-align: center;
+            padding: 20px 0;
+        }
+        .rec-range {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* MOVE CARDS */
+        .move-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--gap);
+            margin: 16px 0;
+        }
+        .move-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .move-card .move-type {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .move-card .move-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .move-card .move-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* PHASE CONTENT */
+        .phase-content { display: none; }
+        .phase-content.active { display: block; }
+
+        /* PLAYER CARDS */
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--gap);
+            margin: 16px 0;
+        }
+        .player-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .player-card h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 12px;
+        }
+        .player-attr {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 12px;
+        }
+        .player-attr .label { color: var(--text-muted); }
+        .player-attr .value { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 60%; }
+
+        /* STRATEGY TAGS */
+        .strat-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin: 2px 4px 2px 0;
+        }
+        .strat-dom { background: rgba(239,68,68,0.15); color: var(--red); text-decoration: line-through; }
+        .strat-viable { background: rgba(16,185,129,0.15); color: var(--green); }
+        .strat-optimal { background: rgba(245,158,11,0.2); color: var(--accent); border: 1px solid var(--accent); }
+
+        /* COUNTER STRATEGY */
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: var(--gap);
+            margin: 16px 0;
+        }
+        .counter-card {
+            background: var(--bg-primary);
+            border-left: 3px solid var(--red);
+            border-radius: 0 8px 8px 0;
+            padding: 20px;
+        }
+        .counter-card h4 {
+            color: var(--red);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .counter-response {
+            background: rgba(16,185,129,0.06);
+            border-left: 3px solid var(--green);
+            border-radius: 0 6px 6px 0;
+            padding: 14px;
+            margin-top: 12px;
+        }
+        .counter-response h5 {
+            color: var(--green);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .highlight { color: var(--accent); font-weight: 700; }
+        .green-text { color: var(--green); }
+        .red-text { color: var(--red); }
+
+        @media (max-width: 768px) {
+            .chart-row, .player-grid, .move-grid, .counter-grid { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .phase-nav { overflow-x: auto; flex-wrap: nowrap; }
+        }
+
+        @media print {
+            body { background: white; color: #111; }
+            .phase-content { display: block !important; page-break-before: always; }
+            .phase-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            <h1>HRTK — Nash Equilibrium Pricing Strategy</h1>
+            <div class="subtitle">Game Theory Analysis of Premium 9mm Pistol Market Entry · March 2026</div>
+        </div>
+        <span class="header-badge">6-Phase Strategic Analysis</span>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Competitors Mapped</div>
+            <div class="kpi-value">23</div>
+            <div class="kpi-sub">$750 – $11,000 range</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">HRTK Floor Price</div>
+            <div class="kpi-value">$3,800</div>
+            <div class="kpi-sub">Minimum viable entry</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Nash Equilibrium Price</div>
+            <div class="kpi-value" style="color:#10b981;">$4,499</div>
+            <div class="kpi-sub">Optimal entry point</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Strategic Window</div>
+            <div class="kpi-value">$4,299–$5,249</div>
+            <div class="kpi-sub">Competitive gap zone</div>
+        </div>
+    </div>
+
+    <!-- PHASE NAV -->
+    <div class="phase-nav">
+        <button class="phase-btn active" onclick="showPhase('overview')">Market Overview</button>
+        <button class="phase-btn" onclick="showPhase('p1')">Phase 1: Players</button>
+        <button class="phase-btn" onclick="showPhase('p2')">Phase 2: Strategy Space</button>
+        <button class="phase-btn" onclick="showPhase('p3')">Phase 3: Payoff Matrix</button>
+        <button class="phase-btn" onclick="showPhase('p4')">Phase 4: Nash Equilibrium</button>
+        <button class="phase-btn" onclick="showPhase('p5')">Phase 5: Optimal Moves</button>
+        <button class="phase-btn" onclick="showPhase('p6')">Phase 6: Counter-Strategy</button>
+    </div>
+
+    <!-- ================= OVERVIEW ================= -->
+    <div class="phase-content active" id="phase-overview">
+        <div class="chart-row">
+            <div class="chart-box" style="grid-column: 1 / -1;">
+                <h3>Competitive Landscape — Price Range by Manufacturer</h3>
+                <canvas id="chart-landscape" height="500"></canvas>
+            </div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>Market Tier Density — Competitors per Price Band</h3>
+                <canvas id="chart-density"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>Price Midpoint Distribution</h3>
+                <canvas id="chart-midpoints"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Market Structure Summary</h2>
+            <p>The 2011/premium 9mm market contains <span class="highlight">23 competitors</span> spanning a massive price range from $750 to $11,000. The market is NOT uniformly distributed — it clusters into distinct tiers with exploitable gaps.</p>
+            <h3>Critical Finding: The $4,300–$5,250 Gap</h3>
+            <p>Between the top of the mid-premium tier (Staccato's ceiling at $4,299) and the bottom of the ultra-premium cluster (Dark Forge at $5,250), there exists a <span class="highlight">strategic pricing gap</span> with minimal direct competition. Only Race City Defense ($4,000–$5,000) and MPA's upper range ($5,149) touch this zone. This gap is HRTK's optimal insertion point — it allows premium positioning above the mass-premium market without triggering direct confrontation with established custom builders.</p>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 1 ================= -->
+    <div class="phase-content" id="phase-p1">
+        <div class="card">
+            <h2>Phase 1: Player Identification & Incentive Mapping</h2>
+            <p>Every competitive market contains both visible and hidden players. Below are the six key players whose strategies will interact with HRTK's pricing decision.</p>
+        </div>
+        <div class="player-grid">
+            <div class="player-card">
+                <h4>Player 1: HRTK (You)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Maximize GM while capturing market share at launch</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Establish brand equity as a disruptive premium OEM</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">Priced into a tier where you're compared to established brands and lose on reputation alone</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">Novel design concept that competitors can't replicate immediately</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">Unknown brand = unknown perceived value; market hasn't validated your design yet</span></div>
+            </div>
+            <div class="player-card">
+                <h4>Player 2: Staccato (Dominant Mid-Premium)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Protect $2,300–$4,299 range dominance; they own the "premium 2011" mindshare</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Move upmarket to capture higher margins</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">A disruptive entrant steals the "next step up" positioning from their top tier</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">Massive brand recognition, dealer network, LE/military contracts</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">Scale-driven; slow to innovate on design; vulnerable to "boutique premium" narrative</span></div>
+            </div>
+            <div class="player-card">
+                <h4>Player 3: Ultra-Premium Cluster (Atlas, Dark Forge, Hayes, etc.)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Maintain exclusivity and scarcity-based pricing power ($5,000–$8,000)</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Build wait-list demand to justify premium</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">A new entrant delivers comparable quality at lower price, breaking the "you get what you pay for" narrative</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">Established reputations, competition results, word-of-mouth</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">Small operations; limited ability to scale if market shifts downward</span></div>
+            </div>
+            <div class="player-card">
+                <h4>Player 4: Budget/Mid Tier (Springfield, Kimber, SIG)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Volume sales in the $1,500–$3,300 range</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Creep upmarket with "premium" variants</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">Margin erosion from below (Turkish imports) and irrelevance from above</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">Distribution scale, brand awareness, retail presence</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">Not direct competitors to HRTK — but their customers are your future upgrade buyers</span></div>
+            </div>
+            <div class="player-card">
+                <h4>Player 5: Influencers & Competition Shooters (Hidden Player)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Content that gets views; sponsorship deals; access to new products first</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Perceived credibility and authority in the community</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">Recommending a product that fails publicly</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">They CONTROL the information channel between you and your buyer</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">They can be bought — but authenticity is their currency, so overly obvious sponsorships backfire</span></div>
+            </div>
+            <div class="player-card">
+                <h4>Player 6: Dealers & Retailers (Hidden Player)</h4>
+                <div class="player-attr"><span class="label">Primary Incentive</span><span class="value">Margin per unit and inventory turn speed</span></div>
+                <div class="player-attr"><span class="label">Secondary Incentive</span><span class="value">Exclusive or early access to drive foot traffic</span></div>
+                <div class="player-attr"><span class="label">Worst Case</span><span class="value">Stocking an unknown brand that sits on shelves</span></div>
+                <div class="player-attr"><span class="label">Info Advantage</span><span class="value">Direct customer feedback; they know what walks out the door</span></div>
+                <div class="player-attr"><span class="label">Blind Spot</span><span class="value">Risk-averse; biased toward brands they already sell successfully</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 2 ================= -->
+    <div class="phase-content" id="phase-p2">
+        <div class="card">
+            <h2>Phase 2: Strategy Space — HRTK's Available Pricing Moves</h2>
+            <p>Given your floor of $3,800, the following pricing strategies represent your complete decision space. Dominated strategies have been identified and eliminated.</p>
+        </div>
+        <div class="chart-row">
+            <div class="chart-box" style="grid-column: 1 / -1;">
+                <h3>HRTK Strategy Space vs. Competitor Positioning</h3>
+                <canvas id="chart-strategy-space"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Strategy Evaluation</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Price Range</th>
+                            <th>Direct Competitors</th>
+                            <th>Status</th>
+                            <th>Reasoning</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S1: Floor Entry</td>
+                            <td>$3,800 – $4,100</td>
+                            <td>Staccato (top), Miller Precision, Cosaint, Race City (low)</td>
+                            <td><span class="strat-dom">DOMINATED</span></td>
+                            <td>Directly compared to Staccato's top tier where they have brand advantage. You compete on reputation you haven't built yet. GM is minimized. No upside.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S2: Gap Exploitation</td>
+                            <td>$4,200 – $4,800</td>
+                            <td>Race City (mid), MPA (top) — sparse</td>
+                            <td><span class="strat-optimal">★ OPTIMAL</span></td>
+                            <td>Sits in the density gap above Staccato's ceiling ($4,299) and below the custom cluster ($5,250+). Minimal direct competition. Signals "above mass-premium" without entering the custom-build price war.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S3: Lower Ultra-Premium</td>
+                            <td>$4,800 – $5,500</td>
+                            <td>Race City (top), MPA (top), Phoenix Trinity (low), Dark Forge (low)</td>
+                            <td><span class="strat-viable">VIABLE</span></td>
+                            <td>Higher GM per unit but you begin competing with established custom builders. Your "new design" narrative must be extremely strong. Higher risk, higher reward.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S4: Full Ultra-Premium</td>
+                            <td>$5,500 – $6,500</td>
+                            <td>BG Defense, CNC Gunworks, Cardinal Arms, Dark Forge, Atlas</td>
+                            <td><span class="strat-dom">DOMINATED</span></td>
+                            <td>Crowded with established custom builders who have years of track record and competition wins. As a new entrant, you cannot justify this price without proven performance history. You'd be fighting 8+ competitors with brand equity you lack.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S5: Do Nothing</td>
+                            <td>N/A</td>
+                            <td>N/A</td>
+                            <td><span class="strat-dom">DOMINATED</span></td>
+                            <td>Delay allows competitors to fill the gap zone or develop counter-positioning. First-mover advantage in the gap evaporates.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S6: Game Changer — DTC Only</td>
+                            <td>$4,200 – $4,800 MSRP via DTC</td>
+                            <td>Bypasses traditional dealer network</td>
+                            <td><span class="strat-viable">VIABLE (SECONDARY)</span></td>
+                            <td>Eliminates dealer margin (typically 20-30%), enabling higher GM at the same consumer price. Risks alienating dealer channel but maximizes margin. Can be combined with S2.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Competitor Response Strategies (Simplified)</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>R1: Hold</th>
+                            <th>R2: Counter-Price</th>
+                            <th>R3: Upmarket Move</th>
+                            <th>Most Likely</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--accent-light);font-weight:600;">Staccato</td>
+                            <td>Keep $2,300–$4,299 range</td>
+                            <td>Introduce $4,500+ "Pro" or "Elite" tier</td>
+                            <td>Launch $5,000+ custom program</td>
+                            <td><span class="strat-viable">R1 or R2</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--accent-light);font-weight:600;">Ultra-Premium Cluster</td>
+                            <td>Ignore new entrant</td>
+                            <td>Emphasize track record / competition wins</td>
+                            <td>N/A — already there</td>
+                            <td><span class="strat-viable">R1</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--accent-light);font-weight:600;">Cosaint / Race City</td>
+                            <td>Maintain current pricing</td>
+                            <td>Push marketing spend to defend share</td>
+                            <td>Introduce new models</td>
+                            <td><span class="strat-viable">R1 or R2</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 3 ================= -->
+    <div class="phase-content" id="phase-p3">
+        <div class="card">
+            <h2>Phase 3: Payoff Matrix</h2>
+            <p>The simplified payoff matrix below models HRTK's pricing strategies against Staccato's most likely responses (as the dominant mid-premium player whose actions most directly affect HRTK's outcomes). Payoffs are rated 1–10 for each player (HRTK / Staccato), where 10 = best possible outcome.</p>
+        </div>
+        <div class="chart-box" style="margin-bottom:16px;">
+            <h3>HRTK vs. Staccato — Payoff Matrix (HRTK Score / Staccato Score)</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="background:var(--bg-primary);">HRTK ↓ \ Staccato →</th>
+                            <th>R1: Hold Pricing</th>
+                            <th>R2: Launch $4,500+ Tier</th>
+                            <th>R3: Aggressive Marketing</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S1: Floor ($3,800–$4,100)</td>
+                            <td><span class="red-text">4</span> / <span class="green-text">8</span></td>
+                            <td><span class="red-text">2</span> / <span class="green-text">9</span></td>
+                            <td><span class="red-text">2</span> / <span class="green-text">8</span></td>
+                        </tr>
+                        <tr style="background:rgba(245,158,11,0.06);">
+                            <td style="color:var(--accent);font-weight:700;">S2: Gap ($4,200–$4,800) ★</td>
+                            <td><span class="green-text" style="font-weight:800;">8</span> / <span class="green-text">7</span></td>
+                            <td><span class="green-text">6</span> / <span class="green-text">7</span></td>
+                            <td><span class="green-text">7</span> / <span>6</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S3: Lower Ultra ($4,800–$5,500)</td>
+                            <td><span class="green-text">7</span> / <span class="green-text">7</span></td>
+                            <td><span>5</span> / <span class="green-text">8</span></td>
+                            <td><span>5</span> / <span class="green-text">7</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--text-primary);font-weight:600;">S4: Full Ultra ($5,500–$6,500)</td>
+                            <td><span>5</span> / <span class="green-text">8</span></td>
+                            <td><span class="red-text">3</span> / <span class="green-text">9</span></td>
+                            <td><span class="red-text">3</span> / <span class="green-text">8</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;">
+                <h3>Reading the Matrix</h3>
+                <ul>
+                    <li><strong style="color:var(--green);">Cooperative equilibrium (both win):</strong> HRTK plays S2, Staccato plays R1 → <span class="highlight">8/7</span>. Both players get strong outcomes. HRTK owns the gap; Staccato keeps its turf unchallenged.</li>
+                    <li><strong style="color:var(--blue);">Zero-sum risk:</strong> If HRTK plays S1 (floor) and Staccato responds with R2 (upmarket push), HRTK gets crushed (2) while Staccato benefits (9). You're in their killzone.</li>
+                    <li><strong style="color:var(--red);">Prisoner's dilemma trap:</strong> If HRTK goes S4 and Staccato launches R2, both players are worse off than the cooperative equilibrium — HRTK struggles at (3) in unfamiliar territory while Staccato wastes resources defending a tier they didn't need to.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>HRTK Payoff by Strategy (Averaged Across Staccato Responses)</h3>
+                <canvas id="chart-payoff-hrtk"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>Payoff Variance — Risk Profile by Strategy</h3>
+                <canvas id="chart-payoff-variance"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 4 ================= -->
+    <div class="phase-content" id="phase-p4">
+        <div class="card">
+            <h2>Phase 4: Nash Equilibrium Analysis</h2>
+            <p>The Nash Equilibrium is the strategy combination where <em>no player can improve their outcome by unilaterally changing their strategy</em>. Here's what the math tells us.</p>
+        </div>
+        <div class="rec-box">
+            <h3>Nash Equilibrium: HRTK plays S2 (Gap) + Staccato plays R1 (Hold)</h3>
+            <div class="rec-price">$4,499</div>
+            <div class="rec-range">Recommended MSRP Entry Point — within the $4,299 – $5,249 strategic gap</div>
+        </div>
+        <div class="card">
+            <h3>Why $4,499 Is the Equilibrium</h3>
+            <p><strong>From HRTK's perspective:</strong> Given that Staccato most likely holds pricing (R1), HRTK's best response is S2 (payoff: 8). Switching to S1 drops HRTK to 4. Switching to S3 drops to 7. Switching to S4 drops to 5. HRTK has no incentive to deviate from S2.</p>
+            <p style="margin-top:10px;"><strong>From Staccato's perspective:</strong> Given HRTK plays S2, Staccato's best response is R1 (payoff: 7). Switching to R2 keeps them at 7 but costs them development resources. Switching to R3 drops them to 6. Staccato has no incentive to deviate from R1.</p>
+            <p style="margin-top:10px;"><strong>This is a stable equilibrium.</strong> Neither player benefits from changing their strategy unilaterally. It's also the <span class="highlight">Pareto-optimal outcome</span> — the combined payoff of 15 (8+7) is the highest achievable without one player losing.</p>
+
+            <h3>Why Exactly $4,499?</h3>
+            <ul>
+                <li><strong>$200 above Staccato's ceiling ($4,299):</strong> Creates clear psychological separation. You are NOT competing with Staccato — you are the tier above them.</li>
+                <li><strong>Below the $5,000 psychological barrier:</strong> Keeps you accessible to the upgrader buyer who maxed out at Staccato and wants the "next level" without jumping to $5,500+ custom territory.</li>
+                <li><strong>The "9" effect:</strong> $4,499 reads as "mid-four-thousands" rather than "almost five thousand" — the same anchoring that makes $999 feel different than $1,000.</li>
+                <li><strong>Maximum defensible gap:</strong> Far enough above Staccato to avoid direct comparison; far enough below the custom cluster to avoid credibility challenges.</li>
+            </ul>
+
+            <h3>Multiple Equilibria Check</h3>
+            <p>A secondary equilibrium exists at <strong>S3/R1 (payoff: 7/7)</strong>, where HRTK enters at $4,800–$5,500 and Staccato holds. This equilibrium is <em>less stable</em> because it puts HRTK closer to the custom builder cluster, making it more sensitive to their competitive responses. It also has lower payoff for HRTK (7 vs. 8). The S2/R1 equilibrium dominates.</p>
+        </div>
+        <div class="chart-row">
+            <div class="chart-box">
+                <h3>Equilibrium Stability — Payoff Sensitivity</h3>
+                <canvas id="chart-equilibrium"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>HRTK Price Positioning on Competitive Map</h3>
+                <canvas id="chart-position"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 5 ================= -->
+    <div class="phase-content" id="phase-p5">
+        <div class="card">
+            <h2>Phase 5: Optimal Move Sequence</h2>
+            <p>Based on the equilibrium at $4,499, here are your four strategic moves — each with a specific, actionable instruction.</p>
+        </div>
+        <div class="move-grid">
+            <div class="move-card">
+                <div class="move-type" style="color:var(--accent);">Move 1 — Immediate</div>
+                <div class="move-title">Set MSRP at $4,499. Do not negotiate down.</div>
+                <div class="move-desc">Lock in $4,499 as launch MSRP. Build your cost structure backward from this number to hit your target GM (aim for 45–55% gross margin). If your COGS doesn't support this, reduce scope before reducing price. MAP (Minimum Advertised Price) policy must be ironclad from day one — no dealer discounting below $4,499. This price IS your brand.</div>
+            </div>
+            <div class="move-card">
+                <div class="move-type" style="color:var(--blue);">Move 2 — Signaling</div>
+                <div class="move-title">Reveal your design innovation. Conceal your capacity.</div>
+                <div class="move-desc">Show the market exactly why your design is disruptive — patent details, engineering advantages, what makes it mechanically distinct. But do NOT reveal your production capacity or unit economics. Let competitors assume you're a low-volume custom shop (which justifies the price). Scarcity perception drives premium positioning. Launch with limited initial allocation — "sold out" is the most powerful marketing you can buy.</div>
+            </div>
+            <div class="move-card">
+                <div class="move-type" style="color:var(--purple);">Move 3 — Contingency</div>
+                <div class="move-title">If Staccato launches above $4,500 → Move up to $4,899.</div>
+                <div class="move-desc">If Staccato introduces a tier at $4,500+, your gap advantage narrows. Your contingency: immediately announce a "Signature" or launch-edition variant at $4,899–$5,199, and position the $4,499 model as the "standard." This restores your premium separation while giving you a two-tier pricing ladder. Have this variant spec'd and ready BEFORE launch.</div>
+            </div>
+            <div class="move-card">
+                <div class="move-type" style="color:var(--green);">Move 4 — Game Changer</div>
+                <div class="move-title">Build a DTC pre-order ecosystem to bypass dealer dependency.</div>
+                <div class="move-desc">The structural game-changer: build a direct-to-consumer pre-order system with a $500 refundable deposit. This gives you demand data before production commitment, cash flow advantage, dealer leverage (show demand proof when negotiating dealer terms), and margin control (no 20–30% dealer markup eroding your GM). Tesla's model applied to firearms. The equilibrium permanently shifts in your favor because you control the distribution.</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Price Ladder Strategy (Year 1 → Year 2)</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Phase</th>
+                            <th>Model</th>
+                            <th>MSRP</th>
+                            <th>Purpose</th>
+                            <th>GM Target</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--accent);font-weight:600;">Launch (Q3/Q4 2026)</td>
+                            <td>HRTK Standard</td>
+                            <td>$4,499</td>
+                            <td>Anchor position in the gap; establish brand; capture upgrade buyers from Staccato</td>
+                            <td>48–55%</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--green);font-weight:600;">6 Months Post-Launch</td>
+                            <td>HRTK Signature / Pro</td>
+                            <td>$5,199 – $5,499</td>
+                            <td>Upmarket extension; competes with lower ultra-premium; increases avg selling price</td>
+                            <td>52–60%</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--blue);font-weight:600;">Year 2</td>
+                            <td>HRTK Competition / Limited</td>
+                            <td>$5,999 – $6,499</td>
+                            <td>Full ultra-premium play once brand equity is established; compete directly with Atlas/Dark Forge tier</td>
+                            <td>55–65%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PHASE 6 ================= -->
+    <div class="phase-content" id="phase-p6">
+        <div class="card">
+            <h2>Phase 6: Counter-Strategy Defense</h2>
+            <p>Below are the two most probable competitive responses to HRTK entering at $4,499, along with pre-planned counter-moves and trap avoidance.</p>
+        </div>
+        <div class="counter-grid">
+            <div class="counter-card">
+                <h4>Threat 1: Staccato Introduces a $4,500+ "Staccato Elite" Tier</h4>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"><strong>Probability:</strong> 35–45% within 12 months of your launch. Staccato has the manufacturing scale and brand equity to move upmarket quickly. They've already shown a willingness to expand their range (from $2,300 to $4,299).</p>
+                <p style="font-size:13px;color:var(--text-secondary);"><strong>Impact:</strong> Compresses your price gap and forces direct comparison with the most recognized brand in the segment.</p>
+                <div class="counter-response">
+                    <h5>Your Counter-Move</h5>
+                    <p style="font-size:13px;color:var(--text-secondary);">Activate your pre-planned Signature/Pro variant at $4,899–$5,199. Maintain the $4,499 standard model. Frame the narrative as: "Staccato is trying to reach where HRTK already lives." Their upmarket move validates your positioning. Lean into influencer channels to reinforce that HRTK's design innovation at $4,499 already surpasses what Staccato is charging $4,500+ for. The first-mover advantage in the gap is yours — they're responding to you, not the other way around.</p>
+                </div>
+            </div>
+            <div class="counter-card">
+                <h4>Threat 2: Ultra-Premium Builders Publicly Dismiss HRTK's Quality</h4>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"><strong>Probability:</strong> 50–60% through social media / forum commentary. Custom builders will frame you as "just another production gun" trying to charge custom prices without the pedigree.</p>
+                <p style="font-size:13px;color:var(--text-secondary);"><strong>Impact:</strong> Credibility damage with enthusiast buyers who trust established builders.</p>
+                <div class="counter-response">
+                    <h5>Your Counter-Move</h5>
+                    <p style="font-size:13px;color:var(--text-secondary);">Pre-empt this with engineering transparency before launch. Publish detailed machining specs, tolerance data, and independent testing results. Ship early units to 3–5 credible, non-sponsored competitive shooters and let organic reviews speak. The counter-narrative writes itself: "HRTK delivers $6,000 quality at $4,499 because their design is fundamentally better, not because they're cutting corners." Your novel design concept is the shield — it's not a copy of a 2011 trying to be cheaper. It's a new platform.</p>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Trap Avoidance</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Trap</th>
+                            <th>How It Works</th>
+                            <th>How to Avoid It</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color:var(--red);font-weight:600;">The Price War Trap</td>
+                            <td>A competitor (likely Cosaint or Race City) drops price to $3,500–$3,800 to undercut you and tempt you into a downward spiral.</td>
+                            <td>Never respond to price cuts below you. Your game is above them. A price war below $4,000 is someone else's problem. Your MAP policy is your armor.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--red);font-weight:600;">The Credibility Trap</td>
+                            <td>You launch at $4,499 but have QC issues in the first batch — at premium prices, one failure becomes a reputation-defining event.</td>
+                            <td>Limit initial production run. Better to be "sold out" than to ship a defective unit. At $4,499, every single pistol is a brand ambassador or a brand assassin. Zero tolerance for QC shortcuts.</td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--red);font-weight:600;">The Discounting Trap</td>
+                            <td>Dealers push for "introductory pricing" or bundle discounts to move initial inventory. This permanently anchors your perceived value lower.</td>
+                            <td>Ironclad MAP policy. No introductory discounts. Instead, add value: free extra magazine, custom case, first-year warranty extension. Protect the number $4,499 at all costs.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ==================== DATA ====================
+const competitors = [
+    {name:"Palmetto State Armory",model:"Tisas",min:800,max:850},
+    {name:"EAA Corp",model:"Witness 2311",min:750,max:899},
+    {name:"Military Armament Corp",model:"Mac 1911",min:1000,max:1160},
+    {name:"Springfield Armory",model:"Prodigy",min:1500,max:1700},
+    {name:"Kimber",model:"2K11",min:2125,max:3299},
+    {name:"SIG",model:"GTO",min:2300,max:2700},
+    {name:"Jacob Grey",model:"Nox & Hex",min:2499,max:3499},
+    {name:"Miller Precision",model:"Ranger",min:3000,max:4000},
+    {name:"Staccato",model:"2011",min:2300,max:4299},
+    {name:"Cosaint Arms",model:"HAVOC",min:2800,max:4500},
+    {name:"Race City Defense",model:"RC9",min:4000,max:5000},
+    {name:"Masterpiece Arms",model:"DS Series",min:3199,max:5149},
+    {name:"BG Defense",model:"EG/DS1911",min:5675,max:6000},
+    {name:"CNC Gunworks",model:"Akira",min:5750,max:6250},
+    {name:"Cardinal Arms",model:"G2",min:5750,max:6250},
+    {name:"Dark Forge",model:"Reaper/Wrath",min:5250,max:6995},
+    {name:"Hayes Custom",model:"Cobra HC",min:4999,max:7099},
+    {name:"Rafferty Custom",model:"Lucky Charm",min:6200,max:7200},
+    {name:"Atlas Gunworks",model:"Atlas",min:5700,max:7900},
+    {name:"Phoenix Trinity",model:"H2",min:4899,max:7995},
+    {name:"Taran Tactical",model:"Sand/Pit Viper",min:7500,max:8200},
+    {name:"Venom Custom",model:"Venom 2011",min:7000,max:10000},
+    {name:"Infinity Firearms",model:"Custom",min:7000,max:11000}
+];
+
+const COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7'];
+
+// Chart.js defaults
+Chart.defaults.color = '#9aa0a6';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+// ==================== PHASE NAV ====================
+function showPhase(id) {
+    document.querySelectorAll('.phase-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.phase-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('phase-' + id).classList.add('active');
+    event.target.classList.add('active');
+
+    // Init charts for newly visible phase
+    setTimeout(() => {
+        if (id === 'overview') initOverviewCharts();
+        if (id === 'p2') initStrategyChart();
+        if (id === 'p3') initPayoffCharts();
+        if (id === 'p4') initEquilibriumCharts();
+    }, 50);
+}
+
+// ==================== OVERVIEW CHARTS ====================
+let landscapeChart, densityChart, midpointChart;
+
+function initOverviewCharts() {
+    if (landscapeChart) return;
+
+    // Sort by min price
+    const sorted = [...competitors].sort((a, b) => a.min - b.min);
+
+    // Horizontal floating bar chart showing price ranges
+    const ctx1 = document.getElementById('chart-landscape').getContext('2d');
+    landscapeChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: sorted.map(c => c.name),
+            datasets: [{
+                label: 'Price Range',
+                data: sorted.map(c => [c.min, c.max]),
+                backgroundColor: sorted.map(c => {
+                    if (c.min >= 5000) return 'rgba(139,92,246,0.6)';
+                    if (c.min >= 3800) return 'rgba(245,158,11,0.6)';
+                    if (c.min >= 2000) return 'rgba(59,130,246,0.6)';
+                    return 'rgba(107,114,128,0.4)';
+                }),
+                borderColor: sorted.map(c => {
+                    if (c.min >= 5000) return '#8b5cf6';
+                    if (c.min >= 3800) return '#f59e0b';
+                    if (c.min >= 2000) return '#3b82f6';
+                    return '#6b7280';
+                }),
+                borderWidth: 1,
+                borderRadius: 3,
+                borderSkipped: false,
+            },
+            {
+                label: 'HRTK Target Zone',
+                data: sorted.map(() => [4299, 5249]),
+                backgroundColor: 'rgba(16,185,129,0.12)',
+                borderColor: 'rgba(16,185,129,0.4)',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                borderRadius: 0,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 20, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (ctx.datasetIndex === 1) return 'HRTK Strategic Gap: $4,299 – $5,249';
+                            const v = ctx.raw;
+                            return `${ctx.label}: $${v[0].toLocaleString()} – $${v[1].toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        callback: v => '$' + (v/1000).toFixed(0) + 'K',
+                        font: { size: 11 }
+                    },
+                    title: { display: true, text: 'MSRP ($)', font: { size: 12 } }
+                },
+                y: {
+                    ticks: { font: { size: 11 } }
+                }
+            }
+        }
+    });
+
+    // Density chart
+    const bands = ['$750-$1,700','$1,700-$2,500','$2,500-$3,500','$3,500-$4,300','$4,300-$5,250','$5,250-$7,000','$7,000-$11,000'];
+    const bandRanges = [[750,1700],[1700,2500],[2500,3500],[3500,4300],[4300,5250],[5250,7000],[7000,11000]];
+    const counts = bandRanges.map(([lo,hi]) => competitors.filter(c => {
+        const mid = (c.min + c.max) / 2;
+        return mid >= lo && mid < hi;
+    }).length);
+
+    const ctx2 = document.getElementById('chart-density').getContext('2d');
+    densityChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: bands,
+            datasets: [{
+                label: 'Competitors',
+                data: counts,
+                backgroundColor: bands.map((_, i) => i === 4 ? 'rgba(16,185,129,0.5)' : 'rgba(59,130,246,0.4)'),
+                borderColor: bands.map((_, i) => i === 4 ? '#10b981' : '#3b82f6'),
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(ctx) {
+                            if (ctx.dataIndex === 4) return '← HRTK Target Zone (Low Density)';
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: '# of Competitors' },
+                    ticks: { stepSize: 1 }
+                },
+                x: { ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    // Midpoint scatter
+    const mids = competitors.map(c => ({ x: (c.min + c.max) / 2, y: c.max - c.min, name: c.name }));
+    const ctx3 = document.getElementById('chart-midpoints').getContext('2d');
+    midpointChart = new Chart(ctx3, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Competitors',
+                data: mids,
+                backgroundColor: mids.map(m => {
+                    if (m.x >= 4299 && m.x <= 5250) return 'rgba(16,185,129,0.7)';
+                    if (m.x >= 3800) return 'rgba(245,158,11,0.6)';
+                    return 'rgba(59,130,246,0.4)';
+                }),
+                pointRadius: 7,
+                pointHoverRadius: 10,
+            },
+            {
+                label: 'HRTK ($4,499)',
+                data: [{ x: 4499, y: 0 }],
+                backgroundColor: '#ef4444',
+                borderColor: '#ef4444',
+                pointRadius: 12,
+                pointStyle: 'star',
+                pointHoverRadius: 15,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (ctx.datasetIndex === 1) return 'HRTK Target: $4,499';
+                            const d = ctx.raw;
+                            return `${d.name}: Mid $${d.x.toLocaleString()} (Range: $${d.y.toLocaleString()})`;
+                        }
+                    }
+                },
+                legend: { labels: { usePointStyle: true, padding: 16 } }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Price Midpoint ($)' },
+                    ticks: { callback: v => '$' + (v/1000).toFixed(1) + 'K' }
+                },
+                y: {
+                    title: { display: true, text: 'Price Spread ($)' },
+                    ticks: { callback: v => '$' + v.toLocaleString() }
+                }
+            }
+        }
+    });
+}
+
+// ==================== STRATEGY SPACE CHART ====================
+let stratChart;
+function initStrategyChart() {
+    if (stratChart) return;
+    const ctx = document.getElementById('chart-strategy-space').getContext('2d');
+
+    // Show competitor density as background + HRTK strategies as overlays
+    const relevantComps = competitors.filter(c => c.max >= 3000).sort((a,b) => a.min - b.min);
+
+    stratChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: relevantComps.map(c => c.name),
+            datasets: [
+                {
+                    label: 'Competitor Range',
+                    data: relevantComps.map(c => [c.min, c.max]),
+                    backgroundColor: 'rgba(59,130,246,0.3)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'S1: Floor ($3,800–$4,100) — DOMINATED',
+                    data: relevantComps.map(() => [3800, 4100]),
+                    backgroundColor: 'rgba(239,68,68,0.15)',
+                    borderColor: 'rgba(239,68,68,0.5)',
+                    borderWidth: 1,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'S2: Gap ($4,200–$4,800) — OPTIMAL ★',
+                    data: relevantComps.map(() => [4200, 4800]),
+                    backgroundColor: 'rgba(16,185,129,0.2)',
+                    borderColor: 'rgba(16,185,129,0.7)',
+                    borderWidth: 2,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'S3: Lower Ultra ($4,800–$5,500) — Viable',
+                    data: relevantComps.map(() => [4800, 5500]),
+                    backgroundColor: 'rgba(245,158,11,0.12)',
+                    borderColor: 'rgba(245,158,11,0.5)',
+                    borderWidth: 1,
+                    borderSkipped: false,
+                }
+            ]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
+                }
+            },
+            scales: {
+                x: {
+                    min: 2500,
+                    max: 11500,
+                    ticks: { callback: v => '$' + (v/1000).toFixed(1) + 'K' }
+                },
+                y: { ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+
+// ==================== PAYOFF CHARTS ====================
+let payoffChart, varianceChart;
+function initPayoffCharts() {
+    if (payoffChart) return;
+
+    // HRTK avg payoffs
+    const strategies = ['S1: Floor', 'S2: Gap ★', 'S3: Lower Ultra', 'S4: Full Ultra'];
+    const avgPayoffs = [2.67, 7.0, 5.67, 3.67]; // averaged across Staccato responses
+    const minPayoffs = [2, 6, 5, 3];
+    const maxPayoffs = [4, 8, 7, 5];
+
+    const ctx1 = document.getElementById('chart-payoff-hrtk').getContext('2d');
+    payoffChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: strategies,
+            datasets: [{
+                label: 'Average HRTK Payoff',
+                data: avgPayoffs,
+                backgroundColor: strategies.map((_, i) => i === 1 ? 'rgba(16,185,129,0.6)' : 'rgba(59,130,246,0.4)'),
+                borderColor: strategies.map((_, i) => i === 1 ? '#10b981' : '#3b82f6'),
+                borderWidth: 2,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 10, title: { display: true, text: 'Payoff Score (1-10)' } },
+                x: { ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+
+    // Variance / risk
+    const ctx2 = document.getElementById('chart-payoff-variance').getContext('2d');
+    varianceChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: strategies,
+            datasets: [
+                {
+                    label: 'Min Payoff',
+                    data: minPayoffs,
+                    backgroundColor: 'rgba(239,68,68,0.4)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Max Payoff',
+                    data: maxPayoffs,
+                    backgroundColor: 'rgba(16,185,129,0.4)',
+                    borderColor: '#10b981',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } }
+            },
+            scales: {
+                y: { beginAtZero: true, max: 10, title: { display: true, text: 'Payoff Score (1-10)' } }
+            }
+        }
+    });
+}
+
+// ==================== EQUILIBRIUM CHARTS ====================
+let eqChart, posChart;
+function initEquilibriumCharts() {
+    if (eqChart) return;
+
+    // Sensitivity radar
+    const ctx1 = document.getElementById('chart-equilibrium').getContext('2d');
+    eqChart = new Chart(ctx1, {
+        type: 'radar',
+        data: {
+            labels: ['Avg Payoff', 'Min Payoff\n(Worst Case)', 'Stability\n(Low Variance)', 'Competitive\nSeparation', 'GM Potential', 'Brand Signal\nStrength'],
+            datasets: [
+                {
+                    label: 'S2: Gap ($4,499) ★',
+                    data: [7, 6, 9, 9, 7, 8],
+                    backgroundColor: 'rgba(16,185,129,0.15)',
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                },
+                {
+                    label: 'S1: Floor ($3,800–$4,100)',
+                    data: [2.7, 2, 4, 3, 4, 3],
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1,
+                    pointRadius: 3,
+                },
+                {
+                    label: 'S3: Lower Ultra ($4,800–$5,500)',
+                    data: [5.7, 5, 6, 5, 8, 7],
+                    backgroundColor: 'rgba(245,158,11,0.1)',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1,
+                    pointRadius: 3,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 10,
+                    ticks: { stepSize: 2, font: { size: 10 } },
+                    pointLabels: { font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.06)' },
+                    angleLines: { color: 'rgba(255,255,255,0.06)' }
+                }
+            }
+        }
+    });
+
+    // Position chart
+    const relevantForPosition = competitors.filter(c => c.min >= 2000).sort((a,b) => ((a.min+a.max)/2) - ((b.min+b.max)/2));
+    const ctx2 = document.getElementById('chart-position').getContext('2d');
+    posChart = new Chart(ctx2, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Competitors',
+                    data: relevantForPosition.map((c, i) => ({ x: (c.min+c.max)/2, y: i, name: c.name })),
+                    backgroundColor: relevantForPosition.map(c => {
+                        const mid = (c.min + c.max) / 2;
+                        if (mid >= 5000) return 'rgba(139,92,246,0.6)';
+                        if (mid >= 3800) return 'rgba(59,130,246,0.6)';
+                        return 'rgba(107,114,128,0.4)';
+                    }),
+                    pointRadius: 8,
+                    pointHoverRadius: 11,
+                },
+                {
+                    label: 'HRTK ($4,499)',
+                    data: [{ x: 4499, y: relevantForPosition.length / 2 }],
+                    backgroundColor: '#10b981',
+                    borderColor: '#10b981',
+                    pointRadius: 14,
+                    pointStyle: 'star',
+                    pointHoverRadius: 18,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (ctx.datasetIndex === 1) return 'HRTK Entry: $4,499';
+                            return `${ctx.raw.name}: $${ctx.raw.x.toLocaleString()}`;
+                        }
+                    }
+                },
+                legend: { labels: { usePointStyle: true, padding: 16 } }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Price Midpoint ($)' },
+                    ticks: { callback: v => '$' + (v/1000).toFixed(1) + 'K' }
+                },
+                y: { display: false }
+            }
+        }
+    });
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+    initOverviewCharts();
+});
+</script>
+</body>
+</html>
